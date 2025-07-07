@@ -1,4 +1,4 @@
-THIS SHOULD BE A LINTER ERRORname: Build Sperm Analyzer AI APK
+name: Build Sperm Analyzer AI APK
 
 on:
   push:
