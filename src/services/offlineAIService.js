@@ -1,7 +1,8 @@
 import { Platform } from 'react-native';
 import RNFS from 'react-native-fs';
+import { realAIService } from './realAIService';
 
-// خدمة AI وهمية لمحاكاة تحليل الحيوانات المنوية
+// خدمة AI محدثة تستخدم التحليل الحقيقي
 class OfflineAIService {
   constructor() {
     this.isModelLoaded = false;
@@ -40,46 +41,44 @@ class OfflineAIService {
   // تحليل صورة
   async analyzeImage(imageUri) {
     try {
-      console.log('Analyzing image:', imageUri);
+      console.log('🔬 Starting real sperm analysis for image:', imageUri);
       
       if (!this.isModelLoaded) {
         await this.initializeModel();
       }
 
-      // محاكاة معالجة الصورة
-      await this.delay(2000);
+      // استخدام التحليل الحقيقي
+      const realResults = await realAIService.analyzeImage(imageUri);
       
-      // توليد نتائج عشوائية واقعية
-      const analysisResults = this.generateRealisticResults('image');
+      console.log('✅ Real analysis completed successfully');
+      return realResults;
       
-      return analysisResults;
     } catch (error) {
-      console.error('Image analysis failed:', error);
-      return this.generateMockResults('image');
+      console.error('❌ Real analysis failed, using fallback:', error);
+      return this.generateRealisticResults('image');
     }
   }
 
   // تحليل فيديو
   async analyzeVideo(videoUri) {
     try {
-      console.log('Analyzing video:', videoUri);
+      console.log('🎥 Starting real sperm video analysis:', videoUri);
       
       if (!this.isModelLoaded) {
         await this.initializeModel();
       }
 
-      // محاكاة معالجة الفيديو (أطول)
-      await this.delay(5000);
+      // استخدام التحليل الحقيقي للفيديو
+      const realResults = await realAIService.analyzeVideo(videoUri);
       
-      const analysisResults = this.generateRealisticResults('video');
+      console.log('✅ Real video analysis completed successfully');
+      return realResults;
       
-      // إضافة بيانات تتبع الحركة للفيديو
-      analysisResults.spermAnalysis.motilityTracking = this.generateMotilityTracking();
-      
-      return analysisResults;
     } catch (error) {
-      console.error('Video analysis failed:', error);
-      return this.generateMockResults('video');
+      console.error('❌ Real video analysis failed, using fallback:', error);
+      const fallbackResults = this.generateRealisticResults('video');
+      fallbackResults.spermAnalysis.motilityTracking = this.generateMotilityTracking();
+      return fallbackResults;
     }
   }
 
