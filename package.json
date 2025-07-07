@@ -12,7 +12,16 @@
     "backend": "cd backend && python main.py",
     "dev": "concurrently \"npm run backend\" \"npm run start\"",
     "build:android": "cd android && ./gradlew assembleRelease",
-    "build:ios": "react-native run-ios --configuration Release"
+    "build:android:debug": "cd android && ./gradlew assembleDebug",
+    "build:android:clean": "cd android && ./gradlew clean",
+    "build:ios": "react-native run-ios --configuration Release",
+    "bundle:android": "npx react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res/",
+    "postinstall": "npx react-native link react-native-vector-icons",
+    "clean": "npx react-native clean && cd android && ./gradlew clean && cd ..",
+    "reset": "npm run clean && rm -rf node_modules && npm install",
+    "apk:debug": "npm run bundle:android && npm run build:android:debug",
+    "apk:release": "npm run bundle:android && npm run build:android",
+    "github:setup": "chmod +x android/gradlew && mkdir -p android/app/src/main/assets"
   },
   "dependencies": {
     "react": "18.2.0",
@@ -68,6 +77,8 @@
     "@types/react-test-renderer": "^18.0.0",
     "@types/lodash": "^4.14.200",
     "babel-jest": "^29.2.1",
+    "babel-plugin-module-resolver": "^5.0.0",
+    "@babel/plugin-transform-remove-console": "^7.22.5",
     "eslint": "^8.19.0",
     "jest": "^29.2.1",
     "metro-react-native-babel-preset": "0.76.8",

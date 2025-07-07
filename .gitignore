@@ -1,0 +1,114 @@
+# React Native
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Metro
+.metro-health-check*
+
+# OSX
+.DS_Store
+
+# Xcode
+build/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata
+*.xccheckout
+*.moved-aside
+DerivedData
+*.hmap
+*.ipa
+*.xcuserstate
+ios/.xcode.env.local
+
+# Android
+*.apk
+*.aab
+android/app/build/
+android/build/
+android/.gradle/
+android/captures/
+android/gradlew
+android/gradlew.bat
+android/local.properties
+*.keystore
+!debug.keystore
+
+# FastLane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+
+# Bundle artifacts
+*.jsbundle
+
+# CocoaPods
+ios/Pods/
+
+# Temporary files created by Metro to check the health of the file watcher
+.metro-health-check*
+
+# Testing
+coverage/
+
+# Flipper
+ios/Flipper-Folly/
+
+# VSCode
+.vscode/
+
+# Environment variables
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Backend
+backend/__pycache__/
+backend/*.pyc
+backend/.env
+backend/static/uploads/*
+backend/static/results/*
+backend/static/charts/*
+backend/models/*.pt
+backend/models/*.pth
+backend/data/
+
+# AI Models
+*.h5
+*.pb
+*.tflite
+*.onnx
+
+# Logs
+logs/
+*.log
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# Gradle Wrapper (will be downloaded)
+android/gradle/wrapper/gradle-wrapper.jar
+
+# Local development
+local.properties
+
+# Generated files
+android/app/src/main/assets/index.android.bundle
+android/app/src/main/res/drawable-*
+android/app/src/main/res/raw/
+
+# Release keystore (security)
+*.keystore
+!debug.keystore
