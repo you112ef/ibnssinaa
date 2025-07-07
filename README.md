@@ -28,6 +28,11 @@ npm install
 npm run apk:release
 ```
 
+### 🚨 إذا لم تظهر GitHub Actions:
+- 📋 **[حل سريع](QUICK_SETUP.md)** - حل في 30 ثانية
+- 🔧 **[دليل تفصيلي](GITHUB_ACTIONS_TROUBLESHOOTING.md)** - حلول شاملة
+- ⚡ **تشغيل تلقائي**: `./setup-github-actions.sh`
+
 ## ✨ Features (المميزات)
 
 ### 🧠 AI Analysis (التحليل بالذكاء الاصطناعي)

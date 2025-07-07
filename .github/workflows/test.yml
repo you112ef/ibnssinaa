@@ -1,0 +1,34 @@
+name: Test GitHub Actions
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Test workflow
+      run: |
+        echo "🎉 GitHub Actions is working!"
+        echo "Repository: ${{ github.repository }}"
+        echo "Branch: ${{ github.ref_name }}"
+        echo "Event: ${{ github.event_name }}"
+        
+    - name: List project files
+      run: |
+        echo "📁 Project structure:"
+        find . -type f -name "*.js" -o -name "*.json" -o -name "*.md" | head -20
+        
+    - name: Check Node.js
+      run: |
+        echo "Node.js version:"
+        node --version
+        npm --version
