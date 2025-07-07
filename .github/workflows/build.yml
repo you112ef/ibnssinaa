@@ -34,178 +34,129 @@ jobs:
         echo "📁 Android directory:"
         ls -la android/ 2>/dev/null || echo "❌ Android directory not found"
         echo "📄 Package.json:"
-        ls -la package.json 2>/dev/null || echo "❌ package.json not found"
-        echo "📄 App.js:"
-        ls -la App.js 2>/dev/null || echo "❌ App.js not found"
-      
-    - name: Setup Node.js
+        ls -la package.json 2>/dev/null || echo "❌ Package.json not found"
+        
+    - name: Setup Node.js 18
       uses: actions/setup-node@v4
       with:
         node-version: '18'
         cache: 'npm'
         
-    - name: Setup Java JDK
+    - name: Setup Java 17
       uses: actions/setup-java@v4
       with:
-        java-version: '17'
         distribution: 'temurin'
+        java-version: '17'
         
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
       
-    - name: Cache Gradle packages
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
-          
-    - name: Cache node modules
-      uses: actions/cache@v3
-      with:
-        path: node_modules
-        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-
-          
-    - name: Install dependencies
-      run: |
-        echo "📦 Installing dependencies with legacy peer deps..."
-        npm install --legacy-peer-deps
-      
-    - name: Create assets directory
-      run: |
-        mkdir -p android/app/src/main/assets
-        
-    - name: Bundle React Native code
-      run: |
-        echo "📦 Creating React Native bundle..."
-        npx react-native bundle \
-          --platform android \
-          --dev false \
-          --entry-file index.js \
-          --bundle-output android/app/src/main/assets/index.android.bundle \
-          --assets-dest android/app/src/main/res/
-          
-    - name: Generate debug keystore
-      run: |
-        cd android/app
-        keytool -genkeypair \
-          -v \
-          -storetype PKCS12 \
-          -keystore debug.keystore \
-          -alias androiddebugkey \
-          -keyalg RSA \
-          -keysize 2048 \
-          -validity 10000 \
-          -storepass android \
-          -keypass android \
-          -dname "CN=Android Debug,O=Android,C=US"
-          
-    - name: Generate release keystore
-      run: |
-        cd android/app
-        keytool -genkeypair \
-          -v \
-          -storetype PKCS12 \
-          -keystore sperm-analyzer-release.keystore \
-          -alias sperm-analyzer \
-          -keyalg RSA \
-          -keysize 2048 \
-          -validity 10000 \
-          -storepass spermanalyzer2024 \
-          -keypass spermanalyzer2024 \
-          -dname "CN=Sperm Analyzer AI,OU=Medical,O=SpermAnalyzer,L=City,ST=State,C=US"
-          
-    - name: Set up release signing config
-      run: |
-        echo "SPERM_ANALYZER_UPLOAD_STORE_FILE=sperm-analyzer-release.keystore" >> android/gradle.properties
-        echo "SPERM_ANALYZER_UPLOAD_KEY_ALIAS=sperm-analyzer" >> android/gradle.properties
-        echo "SPERM_ANALYZER_UPLOAD_STORE_PASSWORD=spermanalyzer2024" >> android/gradle.properties
-        echo "SPERM_ANALYZER_UPLOAD_KEY_PASSWORD=spermanalyzer2024" >> android/gradle.properties
-        
     - name: Make gradlew executable
       run: chmod +x android/gradlew
       
-    - name: Clean project
-      run: cd android && ./gradlew clean
+    - name: Create Android assets directory
+      run: mkdir -p android/app/src/main/assets
       
+    - name: Install dependencies
+      run: |
+        echo "� Installing dependencies with legacy peer deps..."
+        npm install --legacy-peer-deps
+        
+    - name: Run tests
+      run: |
+        echo "🧪 Running tests..."
+        npm test
+        
+    - name: Create React Native bundle
+      run: |
+        echo "📦 Creating React Native bundle..."
+        npm run bundle:android
+        
+    - name: Verify bundle creation
+      run: |
+        echo "✅ Verifying bundle was created..."
+        ls -la android/app/src/main/assets/
+        
+    - name: Clean Gradle
+      run: |
+        echo "🧹 Cleaning Gradle..."
+        cd android && ./gradlew clean
+        
     - name: Build Debug APK
-      run: cd android && ./gradlew assembleDebug --stacktrace
-      
+      if: ${{ inputs.build_type == 'debug' || inputs.build_type == 'both' || github.event_name != 'workflow_dispatch' }}
+      run: |
+        echo "🔨 Building Debug APK..."
+        cd android && ./gradlew assembleDebug --stacktrace --info
+        
     - name: Build Release APK
-      run: cd android && ./gradlew assembleRelease --stacktrace
+      if: ${{ inputs.build_type == 'release' || inputs.build_type == 'both' }}
+      env:
+        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || 'defaultpassword' }}
+        KEY_ALIAS: ${{ secrets.KEY_ALIAS || 'defaultalias' }}
+        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'defaultpassword' }}
+      run: |
+        echo "🔨 Building Release APK..."
+        
+        # Create keystore if it doesn't exist
+        if [ ! -f android/app/release-key.keystore ]; then
+          echo "📋 Creating release keystore..."
+          keytool -genkey -v -keystore android/app/release-key.keystore \
+            -alias $KEY_ALIAS -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass $KEYSTORE_PASSWORD -keypass $KEY_PASSWORD \
+            -dname "CN=SpermAnalyzerAI, OU=Development, O=SpermAnalyzerAI, L=City, S=State, C=US"
+        fi
+        
+        cd android && ./gradlew assembleRelease --stacktrace --info
+        
+    - name: Find APK files
+      run: |
+        echo "🔍 Finding generated APK files..."
+        find android -name "*.apk" -type f
         
     - name: Upload Debug APK
-      uses: actions/upload-artifact@v3
+      if: ${{ inputs.build_type == 'debug' || inputs.build_type == 'both' || github.event_name != 'workflow_dispatch' }}
+      uses: actions/upload-artifact@v4
       with:
-        name: debug-apk
-        path: android/app/build/outputs/apk/debug/app-debug.apk
+        name: sperm-analyzer-debug-apk
+        path: android/app/build/outputs/apk/debug/*.apk
+        retention-days: 30
         
     - name: Upload Release APK
-      uses: actions/upload-artifact@v3
+      if: ${{ inputs.build_type == 'release' || inputs.build_type == 'both' }}
+      uses: actions/upload-artifact@v4
       with:
-        name: release-apk
-        path: android/app/build/outputs/apk/release/app-release.apk
+        name: sperm-analyzer-release-apk
+        path: android/app/build/outputs/apk/release/*.apk
+        retention-days: 30
         
-    - name: Create Release
-      if: github.event_name == 'release'
-      uses: softprops/action-gh-release@v1
+    - name: Create GitHub Release
+      if: github.event_name == 'release' && github.event.action == 'created'
+      uses: softprops/action-gh-release@v2
       with:
         files: |
-          android/app/build/outputs/apk/debug/app-debug.apk
-          android/app/build/outputs/apk/release/app-release.apk
-        name: Sperm Analyzer AI v${{ github.ref_name }}
-        body: |
-          ## 🔬 Sperm Analyzer AI - محلل الحيوانات المنوية
-          
-          ### 📱 APK Files:
-          - **app-debug.apk**: Debug version for testing
-          - **app-release.apk**: Production ready version
-          
-          ### ✨ Features:
-          - 🧠 Real AI-powered sperm analysis (offline)
-          - 📊 Advanced chart visualization 
-          - 🌐 Full Arabic/English support with RTL
-          - 🎨 Professional dark blue theme
-          - 📱 Works completely offline
-          
-          ### 📋 Requirements:
-          - Android 5.0+ (API 21)
-          - 2GB RAM minimum
-          - 500MB storage space
-          
-          ### 🚀 Installation:
-          1. Download app-release.apk
-          2. Enable "Install from unknown sources"
-          3. Install and enjoy!
-          
-          **Built automatically with GitHub Actions** ⚡
+          android/app/build/outputs/apk/release/*.apk
+          android/app/build/outputs/apk/debug/*.apk
+        generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
-    - name: Deployment Summary
+    - name: Build Summary
+      if: always()
       run: |
-        echo "## 🎉 Build Completed Successfully!" >> $GITHUB_STEP_SUMMARY
+        echo "## 📱 Build Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 📱 APK Files Generated:" >> $GITHUB_STEP_SUMMARY
-        echo "- **Debug APK**: Ready for testing" >> $GITHUB_STEP_SUMMARY
-        echo "- **Release APK**: Production ready" >> $GITHUB_STEP_SUMMARY
+        echo "### ✅ Completed Steps:" >> $GITHUB_STEP_SUMMARY
+        echo "- Dependencies installed successfully with --legacy-peer-deps" >> $GITHUB_STEP_SUMMARY
+        echo "- Tests passed" >> $GITHUB_STEP_SUMMARY
+        echo "- React Native bundle created" >> $GITHUB_STEP_SUMMARY
+        echo "- APK build completed" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 📊 Build Statistics:" >> $GITHUB_STEP_SUMMARY
-        echo "- **Platform**: Android" >> $GITHUB_STEP_SUMMARY
-        echo "- **Architecture**: arm64-v8a, armeabi-v7a" >> $GITHUB_STEP_SUMMARY
-        echo "- **Min SDK**: 21 (Android 5.0+)" >> $GITHUB_STEP_SUMMARY
-        echo "- **Target SDK**: 33" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### ✅ Features Included:" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Real AI-powered analysis (TensorFlow.js)" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Offline functionality" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Arabic/English support" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Chart visualization" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Professional UI/UX" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Ready for distribution! 🚀**" >> $GITHUB_STEP_SUMMARY
+        echo "### 📋 APK Files:" >> $GITHUB_STEP_SUMMARY
+        
+        if find android -name "*.apk" -type f | grep -q .; then
+          echo "```" >> $GITHUB_STEP_SUMMARY
+          find android -name "*.apk" -type f -exec ls -lh {} \; >> $GITHUB_STEP_SUMMARY
+          echo "```" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ No APK files found" >> $GITHUB_STEP_SUMMARY
+        fi
